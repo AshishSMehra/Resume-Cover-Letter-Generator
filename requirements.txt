@@ -11,3 +11,4 @@ python-docx
 pymupdf
 sentence-transformers
 langchain_community
+google-generativeai
