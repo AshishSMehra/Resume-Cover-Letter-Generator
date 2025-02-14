@@ -1,6 +1,7 @@
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
 
+
 llm = ChatOpenAI(model_name="gpt-4", openai_api_key="your-api-key")
 
 def generate_resume(name, job_desc, similar_resumes):

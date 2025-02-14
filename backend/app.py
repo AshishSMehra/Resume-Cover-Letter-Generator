@@ -1,25 +1,41 @@
-from fastapi import FastAPI, UploadFile, File, Form
+import streamlit as st
 from embeddings import generate_embeddings
 from generator import generate_resume, generate_cover_letter
 from parser import extract_text_from_pdf
 from vector_store import store_resume_embedding, search_similar_resumes
 
-app = FastAPI()
+# Streamlit App
+st.title("Resume and Cover Letter Generator")
 
-@app.post("/upload-resume/")
-async def upload_resume(file: UploadFile = File(...)):
-    text = extract_text_from_pdf(await file.read())
+# Upload Resume File
+uploaded_file = st.file_uploader("Upload your resume (PDF)", type="pdf")
+if uploaded_file:
+    # Extract text from the uploaded PDF
+    text = extract_text_from_pdf(uploaded_file.read())
+    # Generate embeddings for the uploaded resume
     vector = generate_embeddings(text)
-    store_resume_embedding(file.filename, vector, text)
-    return {"message": "Resume uploaded successfully"}
+    # Store the resume embedding for future searches
+    store_resume_embedding(uploaded_file.name, vector, text)
+    st.success("Resume uploaded successfully!")
 
-@app.post("/generate/")
-async def generate_documents(name: str = Form(...), job_description: str = Form(...)):
-    similar_resumes = search_similar_resumes(job_description)
-    resume = generate_resume(name, job_description, similar_resumes)
-    cover_letter = generate_cover_letter(name, job_description, similar_resumes)
-    return {"resume": resume, "cover_letter": cover_letter}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# Form to generate documents
+with st.form("generate_documents"):
+    name = st.text_input("Your Name")
+    job_description = st.text_area("Job Description")
+    submit_button = st.form_submit_button("Generate Resume and Cover Letter")
+    
+    if submit_button:
+        if not name or not job_description:
+            st.error("Please fill in both fields.")
+        else:
+            # Search for similar resumes based on job description
+            similar_resumes = search_similar_resumes(job_description)
+            # Generate resume and cover letter
+            resume = generate_resume(name, job_description, similar_resumes)
+            cover_letter = generate_cover_letter(name, job_description, similar_resumes)
+            
+            # Display the generated resume and cover letter
+            st.subheader("Generated Resume")
+            st.write(resume)
+            st.subheader("Generated Cover Letter")
+            st.write(cover_letter)
